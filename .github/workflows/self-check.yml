@@ -1,0 +1,81 @@
+name: self-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    uses: ./.github/workflows/actionlint.yml
+  zizmor:
+    uses: ./.github/workflows/zizmor.yml
+  gitleaks:
+    uses: ./.github/workflows/gitleaks.yml
+  typos:
+    uses: ./.github/workflows/typos.yml
+  yamllint:
+    uses: ./.github/workflows/yamllint.yml
+  markdownlint:
+    uses: ./.github/workflows/markdownlint.yml
+  shell-lint:
+    uses: ./.github/workflows/shell-lint.yml
+  go-lint:
+    uses: ./.github/workflows/go-lint.yml
+    with:
+      working-directory: testdata/go
+  go-vulncheck:
+    uses: ./.github/workflows/go-vulncheck.yml
+    with:
+      working-directory: testdata/go
+  go-mod-tidy:
+    uses: ./.github/workflows/go-mod-tidy.yml
+    with:
+      working-directory: testdata/go
+  qml-lint:
+    uses: ./.github/workflows/qml-lint.yml
+    with:
+      working-directory: testdata/qml
+  js-biome:
+    uses: ./.github/workflows/js-biome.yml
+    with:
+      working-directory: testdata/js
+  ts-eslint:
+    uses: ./.github/workflows/ts-eslint.yml
+    with:
+      working-directory: testdata/ts
+  python-ruff:
+    uses: ./.github/workflows/python-ruff.yml
+    with:
+      working-directory: testdata/python
+  hadolint:
+    uses: ./.github/workflows/hadolint.yml
+    with:
+      working-directory: testdata/docker
+  buf-lint:
+    uses: ./.github/workflows/buf-lint.yml
+    with:
+      working-directory: testdata/proto
+  ansible-lint:
+    uses: ./.github/workflows/ansible-lint.yml
+    with:
+      working-directory: testdata/ansible
+  gdscript-lint:
+    uses: ./.github/workflows/gdscript-lint.yml
+    with:
+      working-directory: testdata/gdscript
+  go-test:
+    uses: ./.github/workflows/go-test.yml
+    with:
+      working-directory: testdata/go
+      go-versions: '["", "stable"]'
+      os: '["ubuntu-latest", "macos-latest"]'
+  go-test-postgres:
+    uses: ./.github/workflows/go-test-postgres.yml
+    with:
+      working-directory: testdata/go
+      tags: integration
+      dsn-env: FIXTURE_PG_DSN

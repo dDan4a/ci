@@ -1,0 +1,52 @@
+name: go-test-postgres
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+      tags:
+        description: Build tags passed to go test -tags, e.g. integration
+        type: string
+        default: ''
+      dsn-env:
+        description: Name of the environment variable that receives the Postgres DSN
+        type: string
+        default: DATABASE_URL
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ${{ inputs.working-directory }}/go.mod
+          cache-dependency-path: ${{ inputs.working-directory }}/go.sum
+      - env:
+          TAGS: ${{ inputs.tags }}
+          DSN_ENV: ${{ inputs.dsn-env }}
+          DSN: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+        run: env "$DSN_ENV=$DSN" go test -race -cover -tags "$TAGS" ./...

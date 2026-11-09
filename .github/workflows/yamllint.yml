@@ -1,0 +1,30 @@
+name: yamllint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  yamllint:
+    runs-on: ubuntu-latest
+    env:
+      YAMLLINT_VERSION: 1.38.0
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use the reference config if the repo has none
+        env:
+          REFERENCE_CONFIGS: https://raw.githubusercontent.com/${{ job.workflow_repository }}/${{ job.workflow_sha }}/configs
+        run: compgen -G '.yamllint*' >/dev/null || curl -fsSLO "$REFERENCE_CONFIGS/.yamllint"
+      - run: pipx run --spec "yamllint==$YAMLLINT_VERSION" yamllint --strict --format github .

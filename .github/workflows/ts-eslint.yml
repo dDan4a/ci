@@ -1,0 +1,43 @@
+name: ts-eslint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  eslint:
+    runs-on: ubuntu-latest
+    env:
+      ESLINT_VERSION: 10.14.0
+      ESLINT_JS_VERSION: 10.0.1
+      TYPESCRIPT_ESLINT_VERSION: 8.72.1
+      TYPESCRIPT_VERSION: 6.0.3
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+      - run: npm ci
+      - name: Use the reference config if the repo has none
+        env:
+          REFERENCE_CONFIGS: https://raw.githubusercontent.com/${{ job.workflow_repository }}/${{ job.workflow_sha }}/configs
+        run: compgen -G 'eslint.config.*' >/dev/null || curl -fsSLO "$REFERENCE_CONFIGS/eslint.config.mjs"
+      - name: Install ESLint and TypeScript if the project lacks them
+        run: |
+          test -x node_modules/.bin/eslint || npm install --no-save \
+            "eslint@$ESLINT_VERSION" "@eslint/js@$ESLINT_JS_VERSION" "typescript-eslint@$TYPESCRIPT_ESLINT_VERSION" "typescript@$TYPESCRIPT_VERSION"
+      - run: npx --no -- eslint .
+      - name: tsc
+        run: test ! -e tsconfig.json || npx --no -- tsc --noEmit

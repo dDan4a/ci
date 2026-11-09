@@ -1,0 +1,42 @@
+name: qml-lint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  qml-lint:
+    runs-on: ubuntu-latest
+    container: archlinux:base-20261101.0.620205
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Qt
+        run: pacman -Syu --noconfirm --needed qt6-declarative
+      - name: Use the reference config if the repo has none
+        env:
+          REFERENCE_CONFIGS: https://raw.githubusercontent.com/${{ job.workflow_repository }}/${{ job.workflow_sha }}/configs
+        run: |
+          test -e .qmllint.ini || curl -fsSLO "$REFERENCE_CONFIGS/.qmllint.ini"
+          test -e .qmlformat.ini || curl -fsSLO "$REFERENCE_CONFIGS/.qmlformat.ini"
+      - name: qmllint
+        run: find . -name '*.qml' -not -path './.git/*' -print0 | xargs -0 -r /usr/lib/qt6/bin/qmllint --max-warnings 0
+      - name: qmlformat
+        run: |
+          unformatted=0
+          while IFS= read -r -d '' file; do
+            diff -u "$file" <(/usr/lib/qt6/bin/qmlformat "$file") || unformatted=1
+          done < <(find . -name '*.qml' -not -path './.git/*' -print0)
+          exit "$unformatted"

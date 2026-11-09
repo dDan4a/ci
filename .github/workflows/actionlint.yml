@@ -1,0 +1,24 @@
+name: actionlint
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install actionlint
+        env:
+          RELEASE_URL: https://github.com/rhysd/actionlint/releases/download/v${{ env.ACTIONLINT_VERSION }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSL "$RELEASE_URL/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" | tar -xz -C "$RUNNER_TEMP/bin" actionlint
+      - run: '"$RUNNER_TEMP/bin/actionlint" -color'

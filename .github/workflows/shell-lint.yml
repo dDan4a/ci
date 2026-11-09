@@ -1,0 +1,47 @@
+name: shell-lint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  shell-lint:
+    runs-on: ubuntu-latest
+    env:
+      SHELLCHECK_VERSION: v0.11.0
+      SHFMT_VERSION: v3.14.1
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install shellcheck and shfmt
+        env:
+          SHELLCHECK_URL: https://github.com/koalaman/shellcheck/releases/download/${{ env.SHELLCHECK_VERSION }}
+          SHFMT_URL: https://github.com/mvdan/sh/releases/download/${{ env.SHFMT_VERSION }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSL "$SHELLCHECK_URL/shellcheck-$SHELLCHECK_VERSION.linux.x86_64.tar.xz" |
+            tar -xJ --strip-components=1 -C "$RUNNER_TEMP/bin" "shellcheck-$SHELLCHECK_VERSION/shellcheck"
+          curl -fsSLo "$RUNNER_TEMP/bin/shfmt" "$SHFMT_URL/shfmt_${SHFMT_VERSION}_linux_amd64"
+          chmod +x "$RUNNER_TEMP/bin/shfmt"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Use the reference config if the repo has none
+        env:
+          REFERENCE_CONFIGS: https://raw.githubusercontent.com/${{ job.workflow_repository }}/${{ job.workflow_sha }}/configs
+        run: |
+          test -e .shellcheckrc || curl -fsSLO "$REFERENCE_CONFIGS/.shellcheckrc"
+          test -e .editorconfig || curl -fsSLO "$REFERENCE_CONFIGS/.editorconfig"
+      - name: shellcheck
+        run: shfmt -f . | xargs -r -d '\n' shellcheck
+      - name: shfmt
+        run: shfmt -d .
