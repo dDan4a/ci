@@ -5,6 +5,11 @@ run:
 
 linters:
   settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
     lll:
       line-length: 150
       tab-width: 4
