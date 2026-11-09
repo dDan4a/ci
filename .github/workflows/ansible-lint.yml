@@ -1,0 +1,26 @@
+name: ansible-lint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  ansible-lint:
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_LINT_VERSION: 26.11.0
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: pipx run --spec "ansible-lint==$ANSIBLE_LINT_VERSION" ansible-lint --project-dir .

@@ -1,0 +1,35 @@
+name: buf-lint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  buf-lint:
+    runs-on: ubuntu-latest
+    env:
+      BUF_VERSION: v1.75.0
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install buf
+        env:
+          BUF_URL: https://github.com/bufbuild/buf/releases/download/${{ env.BUF_VERSION }}/buf-Linux-x86_64
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSLo "$RUNNER_TEMP/bin/buf" "$BUF_URL"
+          chmod +x "$RUNNER_TEMP/bin/buf"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - run: buf lint --error-format github-actions
+      - run: buf format --diff --exit-code

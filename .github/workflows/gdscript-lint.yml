@@ -1,0 +1,41 @@
+name: gdscript-lint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  gdscript-lint:
+    runs-on: ubuntu-latest
+    env:
+      GDSCRIPT_FORMATTER_VERSION: 0.28.0
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gdscript-formatter
+        env:
+          RELEASE_URL: https://github.com/GDQuest/GDScript-formatter/releases/download/${{ env.GDSCRIPT_FORMATTER_VERSION }}
+        run: |
+          build="gdscript-formatter-$GDSCRIPT_FORMATTER_VERSION-linux-x86_64"
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSLo "$RUNNER_TEMP/formatter.zip" "$RELEASE_URL/$build.zip"
+          unzip -q "$RUNNER_TEMP/formatter.zip" -d "$RUNNER_TEMP"
+          mv "$RUNNER_TEMP/$build" "$RUNNER_TEMP/bin/gdscript-formatter"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Use the reference config if the repo has none
+        env:
+          REFERENCE_CONFIGS: https://raw.githubusercontent.com/${{ job.workflow_repository }}/${{ job.workflow_sha }}/configs
+        run: test -e .editorconfig || curl -fsSLO "$REFERENCE_CONFIGS/.editorconfig"
+      - run: gdscript-formatter --check .
+      - run: gdscript-formatter lint .

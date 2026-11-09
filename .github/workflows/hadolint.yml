@@ -1,0 +1,34 @@
+name: hadolint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory to run in, relative to the repository root
+        type: string
+        default: .
+
+permissions:
+  contents: read
+
+jobs:
+  hadolint:
+    runs-on: ubuntu-latest
+    env:
+      HADOLINT_VERSION: v2.15.1
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install hadolint
+        env:
+          HADOLINT_URL: https://github.com/hadolint/hadolint/releases/download/${{ env.HADOLINT_VERSION }}/hadolint-linux-x86_64
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSLo "$RUNNER_TEMP/bin/hadolint" "$HADOLINT_URL"
+          chmod +x "$RUNNER_TEMP/bin/hadolint"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - run: git ls-files -z '*Dockerfile*' '*Containerfile*' '*.dockerfile' | xargs -0 -r hadolint
