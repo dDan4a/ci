@@ -82,3 +82,8 @@ linters:
       # test data reads better as literals; tests still use production constants where one exists
       - linters: [goconst]
         path: _test\.go$
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
